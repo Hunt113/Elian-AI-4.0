@@ -4,33 +4,43 @@ import { GoogleGenAI } from '@google/genai';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Dual-check for both environment variable names to completely bulletproof the key deployment
-const ai = new GoogleGenAI({ apiKey: process.env.AIzaSyDX3NPePtdrVvE10IPnChpUIO8n1wb7QGk || process.env.AIzaSyDX3NPePtdrVvE10IPnChpUIO8n1wb7QGk });
+// אתחול פשוט של גוגל - הוא מושך אוטומטית את GEMINI_API_KEY מה-Environment
+const ai = new GoogleGenAI();
 
 app.use(express.json());
 
-// API Route to handle chat processing requests
+// נתיב ה-API של הצ'אט
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-const response = await ai.models.generateContent({
+        // המרת ההיסטוריה לפורמט המדויק שגוגל דורשת בגרסת 2026 החדשה
+        const formattedHistory = (history || []).map(item => ({
+            role: item.role,
+            parts: [{ text: item.parts[0].text }]
+        }));
+
+        // יצירת שיחת צ'אט רציפה עם ה-System Instruction הנכון
+        const chat = ai.chats.create({
             model: 'gemini-2.5-flash',
-            contents: contents,
+            history: formattedHistory,
             config: {
                 systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew.",
             }
         });
 
-        res.json({ reply: response.text });
+        const result = await chat.sendMessage({ message: message });
+        res.json({ reply: result.text });
+
     } catch (error) {
+        // מדפיס את השגיאה המלאה ל-Logs של Render כדי שנוכל לראות אותה
         console.error("AI Generation Error:", error);
         res.status(500).json({ error: "Mainframe connection failed." });
     }
 });
 
-// Main Interface Route - Serves the updated Hebrew UI text directly
+// נתיב ממשק המשתמש (HTML + CSS)
 app.get('*', (req, res) => {
     res.send(`
 <!DOCTYPE html>
