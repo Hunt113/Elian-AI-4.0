@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // This automatically handles your key secretly using Render's environment settings
-const ai = new GoogleGenAI();
+const ai = new GoogleGenAI({ apiKey: process.env.AIzaSyDX3NPePtdrVvE10IPnChpUIO8n1wb7QGk || process.env.AIzaSyDX3NPePtdrVvE10IPnChpUIO8n1wb7QGk });
 
 app.use(express.json());
 
