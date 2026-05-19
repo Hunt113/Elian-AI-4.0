@@ -5,7 +5,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Dual-check for both environment variable names to completely bulletproof the key deployment
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.AIzaSyDX3NPePtdrVvE10IPnChpUIO8n1wb7QGk || process.env.AIzaSyDX3NPePtdrVvE10IPnChpUIO8n1wb7QGk });
 
 app.use(express.json());
 
