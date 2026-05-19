@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// נתיב ה-API של הצ'אט - פנייה ישירה ומאובטחת לגרסה היציבה של גוגל
+// נתיב ה-API של הצ'אט - פנייה ישירה לגרסה היציבה (v1) של גוגל למניעת שגיאות 404
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
@@ -35,7 +35,7 @@ app.post('/api/chat', async (req, res) => {
             parts: [{ text: message }]
         });
 
-        // שימוש בנתיב היציב והרשמי של גוגל למניעת שגיאות 404
+        // שימוש בנתיב היציב הרשמי (v1) ובמודל המדויק כדי לפתור את בעיית ה-Not Found
         const googleUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const response = await fetch(googleUrl, {
