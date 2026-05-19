@@ -1,21 +1,20 @@
-import express from 'express';
-import { GoogleGenAI } from '@google/genai';
+const express = require('express');
+const { GoogleGenAI } = require('@google/genai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// אתחול תקין ויציב של ה-SDK
-const ai = new GoogleGenAI(AIzaSyDvRb4NDEimHDFsIno4o8b3P5rF8Hy5gek);
+// אתחול פשוט ויציב
+const ai = new GoogleGenAI();
 
 app.use(express.json());
 
-// נתיב ה-API של הצ'אט - מבוסס על generateContent הפשוט והבטוח
+// נתיב ה-API של הצ'אט
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        // בניית היסטוריית ההודעות בפורמט שגוגל דורשת
         let contents = [];
         
         if (history && history.length > 0) {
@@ -25,13 +24,11 @@ app.post('/api/chat', async (req, res) => {
             }));
         }
         
-        // הוספת ההודעה החדשה של המשתמש לסוף המערך
         contents.push({
             role: 'user',
             parts: [{ text: message }]
         });
 
-        // יצירת התשובה מגוגל
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: contents,
@@ -48,7 +45,7 @@ app.post('/api/chat', async (req, res) => {
     }
 });
 
-// ממשק המשתמש הנקי בעברית (HTML + CSS)
+// ממשק המשתמש (HTML + CSS)
 app.get('*', (req, res) => {
     res.send(`
 <!DOCTYPE html>
