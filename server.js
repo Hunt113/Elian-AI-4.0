@@ -17,7 +17,7 @@ app.post('/api/chat', async (req, res) => {
             return res.status(500).json({ error: "API configuration missing." });
         }
 
-        // בניית היסטוריית השיחה בצורה שגוגל דורשת באופן רשמי
+        // בניית היסטוריית השיחה בצורה שגוגל דורשת
         const contents = [];
         
         if (history && history.length > 0) {
@@ -35,7 +35,7 @@ app.post('/api/chat', async (req, res) => {
             parts: [{ text: message }]
         });
 
-        // פנייה ישירה לכתובת ה-API הרשמית והעדכנית של גוגל
+        // פנייה ישירה לכתובת ה-API הרשמית והעדכנית של גוגל שמסיימת את ה-404
         const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
         const response = await fetch(googleUrl, {
