@@ -5,7 +5,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // אתחול המערכת עם ה-API Key שלך מתוך ה-Environment של Render
-// ודא שב-Render ה-Key נקרא GEMINI_API_KEY
 const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
@@ -17,9 +16,9 @@ app.post('/api/chat', async (req, res) => {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        // שימוש במודל יציב ומהיר
+        // שימוש בשם הדגם המלא והרשמי כדי למנוע שגיאות 404 בגרסאות הישנות
         const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-flash',
+            model: 'gemini-1.5-flash-latest',
             systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew."
         });
 
