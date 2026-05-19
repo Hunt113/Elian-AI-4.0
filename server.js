@@ -15,13 +15,11 @@ app.post('/api/chat', async (req, res) => {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        const contents = history ? [...history, { role: 'user', parts: [{ text: message }] }] : message;
-
-        const response = await ai.models.generateContent({
+const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: contents,
             config: {
-                systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, in the language the user speaks to you (mostly Hebrew), and always maintain your identity as Elian AI.",
+                systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew.",
             }
         });
 
