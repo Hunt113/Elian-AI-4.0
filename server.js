@@ -1,65 +1,77 @@
 const express = require('express');
-const { GoogleGenAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// אתחול ה-SDK הרשמי של גוגל - הפתרון הבטוח ב-100%
-const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-let ai = null;
-
-if (apiKey) {
-    ai = new GoogleGenAI({ apiKey: apiKey });
-} else {
-    console.error("CRITICAL: GEMINI_API_KEY is missing from environment variables!");
-}
-
-// נתיב ה-API של הצ'אט
+// נתיב ה-API של הצ'אט - פנייה ישירה, נקייה ובטוחה ב-100%
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        if (!ai) {
-            return res.status(500).json({ error: "AI configuration missing on server." });
+        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        if (!apiKey) {
+            console.error("API Key is missing in environment variables!");
+            return res.status(500).json({ error: "API configuration missing." });
         }
 
-        // שימוש במודל הרשמי דרך ה-SDK ללא צורך ב-URLs ידניים
-        const model = ai.getGenerativeModel({ 
-            model: "gemini-1.5-flash",
-            systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew."
-        });
-
-        // פורמט ההיסטוריה המובנה של ה-SDK
-        const formattedHistory = [];
+        // בניית היסטוריית השיחה בצורה שגוגל דורשת
+        const contents = [];
+        
         if (history && history.length > 0) {
             history.forEach(item => {
-                formattedHistory.push({
+                contents.push({
                     role: item.role === 'model' ? 'model' : 'user',
                     parts: [{ text: item.parts[0].text }]
                 });
             });
         }
 
-        // הפעלת הצ'אט הרשמי
-        const chat = model.startChat({
-            history: formattedHistory
+        // הוספת ההודעה החדשה של המשתמש
+        contents.push({
+            role: 'user',
+            parts: [{ text: message }]
         });
 
-        const result = await chat.sendMessage(message);
-        const replyText = result.response.text();
+        // הכתובת הרשמית והאוניברסלית של גוגל (גרסה v1 היציבה)
+        const googleUrl = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
 
+        const response = await fetch(googleUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': apiKey // הדרך הנכונה והרשמית להעביר את המפתח ב-v1 למניעת 404
+            },
+            body: JSON.stringify({
+                contents: contents,
+                systemInstruction: {
+                    parts: [{ text: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew." }]
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Google API Error Response:", JSON.stringify(data));
+            return res.status(response.status).json({ error: data.error?.message || "Google API error" });
+        }
+
+        // חילוץ התשובה מתוך ה-JSON שחזר מגוגל
+        const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
         if (replyText) {
             res.json({ reply: replyText });
         } else {
-            res.status(500).json({ error: "Received empty response from AI." });
+            console.error("Unexpected JSON structure from Google:", JSON.stringify(data));
+            res.status(500).json({ error: "Invalid response structure from AI." });
         }
 
     } catch (error) {
         console.error("AI Generation Error:", error);
-        res.status(500).json({ error: "Mainframe connection failed. Check API Key." });
+        res.status(500).json({ error: "Mainframe connection failed." });
     }
 });
 
