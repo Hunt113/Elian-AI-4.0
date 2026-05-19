@@ -16,7 +16,7 @@ app.post('/api/chat', async (req, res) => {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        // שימוש במודל הרשמי והנתמך ביותר בגרסה היציבה של הספרייה
+        // המודל המרכזי והרשמי שעובד פיקס בגרסה הזו
         const model = genAI.getGenerativeModel({ 
             model: 'gemini-1.5-flash',
             systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew."
