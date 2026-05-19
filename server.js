@@ -1,11 +1,13 @@
 const express = require('express');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// אתחול פשוט ויציב
-const ai = new GoogleGenAI();
+// אתחול המערכת עם ה-API Key שלך מתוך ה-Environment של Render
+// ודא שב-Render ה-Key נקרא GEMINI_API_KEY
+const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+const genAI = new GoogleGenerativeAI(apiKey);
 
 app.use(express.json());
 
@@ -15,29 +17,27 @@ app.post('/api/chat', async (req, res) => {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        let contents = [];
-        
-        if (history && history.length > 0) {
-            contents = history.map(item => ({
-                role: item.role,
-                parts: [{ text: item.parts[0].text }]
-            }));
-        }
-        
-        contents.push({
-            role: 'user',
-            parts: [{ text: message }]
+        // שימוש במודל יציב ומהיר
+        const model = genAI.getGenerativeModel({ 
+            model: 'gemini-1.5-flash',
+            systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew."
         });
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: contents,
-            config: {
-                systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew.",
-            }
+        // המרת היסטוריית השיחה למבנה התקני של הספרייה
+        const formattedHistory = (history || []).map(item => ({
+            role: item.role === 'model' ? 'model' : 'user',
+            parts: [{ text: item.parts[0].text }]
+        }));
+
+        // יצירת שיחת צ'אט רציפה
+        const chat = model.startChat({
+            history: formattedHistory
         });
 
-        res.json({ reply: response.text });
+        const result = await chat.sendMessage(message);
+        const response = await result.response;
+        
+        res.json({ reply: response.text() });
 
     } catch (error) {
         console.error("AI Generation Error:", error);
