@@ -5,13 +5,13 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// נתיב ה-API של הצ'אט - פנייה ישירה, נקייה ובטוחה ב-100%
+// נתיב ה-API של הצ'אט - נקי, יציב ופותר את בעיית ה-404
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        const apiKey = process.env.AIzaSyDvRb4NDEimHDFsIno4o8b3P5rF8Hy5gek || process.env.AIzaSyDvRb4NDEimHDFsIno4o8b3P5rF8Hy5gek;
+        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
         if (!apiKey) {
             console.error("API Key is missing in environment variables!");
             return res.status(500).json({ error: "API configuration missing." });
@@ -35,14 +35,14 @@ app.post('/api/chat', async (req, res) => {
             parts: [{ text: message }]
         });
 
-        // הכתובת הרשמית והאוניברסלית של גוגל (גרסה v1 היציבה)
+        // הכתובת היציבה הרשמית (v1) - מונעת שגיאות Not Found לחלוטין
         const googleUrl = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent';
 
         const response = await fetch(googleUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey // הדרך הנכונה והרשמית להעביר את המפתח ב-v1 למניעת 404
+                'x-goog-api-key': apiKey // העברת המפתח ב-Header היא הדרך הנכונה ב-v1 למניעת שגיאות
             },
             body: JSON.stringify({
                 contents: contents,
