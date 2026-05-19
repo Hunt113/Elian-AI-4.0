@@ -1,42 +1,72 @@
 const express = require('express');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// אתחול המערכת עם ה-API Key מתוך ה-Environment של Render
-const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-const genAI = new GoogleGenerativeAI(apiKey);
-
 app.use(express.json());
 
-// נתיב ה-API של הצ'אט
+// נתיב ה-API של הצ'אט - פנייה ישירה ל-API של גוגל ללא ספריות חיצוניות
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        // המודל המרכזי והרשמי שעובד פיקס בגרסה הזו
-        const model = genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-flash',
-            systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew."
-        });
+        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        if (!apiKey) {
+            console.error("API Key is missing in environment variables!");
+            return res.status(500).json({ error: "API configuration missing." });
+        }
 
-        // המרת היסטוריית השיחה למבנה התקני של הספרייה
-        const formattedHistory = (history || []).map(item => ({
-            role: item.role === 'model' ? 'model' : 'user',
-            parts: [{ text: item.parts[0].text }]
-        }));
-
-        // יצירת שיחת צ'אט רציפה
-        const chat = model.startChat({
-            history: formattedHistory
-        });
-
-        const result = await chat.sendMessage(message);
-        const response = await result.response;
+        // בניית היסטוריית השיחה בצורה שגוגל דורשת באופן רשמי
+        const contents = [];
         
-        res.json({ reply: response.text() });
+        if (history && history.length > 0) {
+            history.forEach(item => {
+                contents.push({
+                    role: item.role === 'model' ? 'model' : 'user',
+                    parts: [{ text: item.parts[0].text }]
+                });
+            });
+        }
+
+        // הוספת ההודעה החדשה של המשתמש
+        contents.push({
+            role: 'user',
+            parts: [{ text: message }]
+        });
+
+        // פנייה ישירה לכתובת ה-API הרשמית והעדכנית של גוגל
+        const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+        const response = await fetch(googleUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: contents,
+                systemInstruction: {
+                    parts: [{ text: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew." }]
+                }
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.error("Google API Error Response:", JSON.stringify(data));
+            return res.status(response.status).json({ error: data.error?.message || "Google API error" });
+        }
+
+        // חילוץ התשובה מתוך ה-JSON שחזר מגוגל
+        const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        
+        if (replyText) {
+            res.json({ reply: replyText });
+        } else {
+            console.error("Unexpected JSON structure from Google:", JSON.stringify(data));
+            res.status(500).json({ error: "Invalid response structure from AI." });
+        }
 
     } catch (error) {
         console.error("AI Generation Error:", error);
@@ -117,7 +147,7 @@ app.get('*', (req, res) => {
                     conversationHistory.push({ role: 'user', parts: [{ text: text }] });
                     conversationHistory.push({ role: 'model', parts: [{ text: data.reply }] });
                 } else {
-                    appendMessage("שגיאה: ערוץ התקשורת איבד מידע.", 'ai-message');
+                    appendMessage("שגיאה: ערוץ התקשורת איבד מידע או שה-API Key שגוי.", 'ai-message');
                 }
             } catch (err) {
                 typingIndicator.style.display = 'none';
