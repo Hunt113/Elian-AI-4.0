@@ -4,43 +4,51 @@ import { GoogleGenAI } from '@google/genai';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// אתחול פשוט של גוגל - הוא מושך אוטומטית את GEMINI_API_KEY מה-Environment
-const ai = new GoogleGenAI();
+// אתחול תקין ויציב של ה-SDK
+const ai = new GoogleGenAI(AIzaSyDvRb4NDEimHDFsIno4o8b3P5rF8Hy5gek);
 
 app.use(express.json());
 
-// נתיב ה-API של הצ'אט
+// נתיב ה-API של הצ'אט - מבוסס על generateContent הפשוט והבטוח
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, history } = req.body;
         if (!message) return res.status(400).json({ error: "Content is required." });
 
-        // המרת ההיסטוריה לפורמט המדויק שגוגל דורשת בגרסת 2026 החדשה
-        const formattedHistory = (history || []).map(item => ({
-            role: item.role,
-            parts: [{ text: item.parts[0].text }]
-        }));
+        // בניית היסטוריית ההודעות בפורמט שגוגל דורשת
+        let contents = [];
+        
+        if (history && history.length > 0) {
+            contents = history.map(item => ({
+                role: item.role,
+                parts: [{ text: item.parts[0].text }]
+            }));
+        }
+        
+        // הוספת ההודעה החדשה של המשתמש לסוף המערך
+        contents.push({
+            role: 'user',
+            parts: [{ text: message }]
+        });
 
-        // יצירת שיחת צ'אט רציפה עם ה-System Instruction הנכון
-        const chat = ai.chats.create({
+        // יצירת התשובה מגוגל
+        const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            history: formattedHistory,
+            contents: contents,
             config: {
                 systemInstruction: "You are Elian AI, a highly intelligent, premium, tech-forward AI assistant. You are sleek, witty, incredibly helpful, and supportive. Answer clearly, accurately, and always in Hebrew.",
             }
         });
 
-        const result = await chat.sendMessage({ message: message });
-        res.json({ reply: result.text });
+        res.json({ reply: response.text });
 
     } catch (error) {
-        // מדפיס את השגיאה המלאה ל-Logs של Render כדי שנוכל לראות אותה
         console.error("AI Generation Error:", error);
         res.status(500).json({ error: "Mainframe connection failed." });
     }
 });
 
-// נתיב ממשק המשתמש (HTML + CSS)
+// ממשק המשתמש הנקי בעברית (HTML + CSS)
 app.get('*', (req, res) => {
     res.send(`
 <!DOCTYPE html>
