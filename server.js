@@ -35,8 +35,8 @@ app.post('/api/chat', async (req, res) => {
             parts: [{ text: message }]
         });
 
-        // פנייה ישירה לכתובת ה-API הרשמית והעדכנית של גוגל שמסיימת את ה-404
-        const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+        // פנייה ישירה לכתובת ה-API הרשמית והמדויקת (gemini-1.5-flash-latest)
+        const googleUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
 
         const response = await fetch(googleUrl, {
             method: 'POST',
